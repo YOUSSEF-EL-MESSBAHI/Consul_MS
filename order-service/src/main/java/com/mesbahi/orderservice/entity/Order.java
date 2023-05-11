@@ -1,5 +1,7 @@
 package com.mesbahi.orderservice.entity;
 
+import com.mesbahi.orderservice.DP.Observer.OrderObserver;
+import com.mesbahi.orderservice.DP.State.*;
 import com.mesbahi.orderservice.enums.OrderStatus;
 import com.mesbahi.orderservice.model.Customer;
 import jakarta.persistence.*;
@@ -8,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -17,7 +20,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Order {
+public class Order{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,5 +38,62 @@ public class Order {
             somme+=pi.getAmount();
         }
         return somme;
+    }
+
+    @Transient
+    private OrderState state;
+
+    public void cancel() {
+        state.cancel(this);
+        notifyObservers();
+    }
+
+    public void complete() {
+        state.complete(this);
+        notifyObservers();
+    }
+
+    public void pending() {
+        state.pending(this);
+        notifyObservers();
+    }
+
+    public void setStatus(OrderStatus status) {
+        switch (status) {
+            case CREATED:
+                state = new CreatedState();
+                break;
+            case PENDING:
+                state = new PendingState();
+                break;
+            case COMPLETED:
+                state = new CompletedState();
+                break;
+            case CANCELLED:
+                state = new CancelledState();
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid status: " + status);
+        }
+
+        this.status = status;
+    }
+    //Observer
+    @Transient
+    private List<OrderObserver> observers = new ArrayList<>();
+
+    public void addObserver(OrderObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(OrderObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers() {
+        for (OrderObserver observer : observers) {
+            new Thread(() -> observer.update(this)).start();
+//            observer.update(this);
+        }
     }
 }

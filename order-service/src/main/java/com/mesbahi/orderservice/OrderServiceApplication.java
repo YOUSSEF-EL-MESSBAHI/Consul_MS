@@ -1,5 +1,12 @@
 package com.mesbahi.orderservice;
 
+import com.mesbahi.orderservice.DP.State.CancelledState;
+import com.mesbahi.orderservice.DP.State.CompletedState;
+import com.mesbahi.orderservice.DP.State.CreatedState;
+import com.mesbahi.orderservice.DP.State.PendingState;
+import com.mesbahi.orderservice.DP.strategy.DiscountPricingStrategy;
+import com.mesbahi.orderservice.DP.strategy.RegularPricingStrategy;
+import com.mesbahi.orderservice.DP.strategy.VolumeDiscountPricingStrategy;
 import com.mesbahi.orderservice.entity.Order;
 import com.mesbahi.orderservice.entity.ProductItem;
 import com.mesbahi.orderservice.enums.OrderStatus;
@@ -45,6 +52,7 @@ public class OrderServiceApplication {
                         .status(Math.random()>0.5? OrderStatus.PENDING:OrderStatus.CREATED)
                         .createdAt(new Date())
                         .build();
+
                 Order savedOrder = orderRepository.save(order);
                 for (int j = 0; j < products.size() ; j++) {
                     if(Math.random()>0.70){

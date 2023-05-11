@@ -1,6 +1,7 @@
 package com.mesbahi.orderservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mesbahi.orderservice.DP.strategy.PricingStrategy;
 import com.mesbahi.orderservice.model.Product;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,8 +27,26 @@ public class ProductItem {
     @ManyToOne
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Order order;
+    @Transient
+    private PricingStrategy pricingStrategy;
 
-    public double getAmount(){
-        return price*quantity*(1-discount);
+    public void setPricingStrategy(PricingStrategy pricingStrategy) {
+        this.pricingStrategy = pricingStrategy;
+    }
+
+    public synchronized double getAmount(){
+        Thread t = new Thread(() -> {
+            // Calculate price using the pricing strategy
+            this.price = pricingStrategy.calculatePrice(this);
+        });
+        t.start();
+        try {
+            // Wait for the thread to finish before returning the price
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return this.price;
+        //return pricingStrategy.calculatePrice(this);
     }
 }
